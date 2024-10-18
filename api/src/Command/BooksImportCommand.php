@@ -73,6 +73,10 @@ final class BooksImportCommand extends Command
                     }
                 }
 
+                if (isset($book['subjects'])) {
+                    $datum['categories'] = array_slice($book['subjects'], 0, 3);
+                }
+
                 $data[] = $datum;
 
                 $io->progressAdvance();

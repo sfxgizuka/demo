@@ -52,4 +52,24 @@ class ReviewRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
+
+    public function findMostReviewedDate(bool $isMonth = false): ?array
+{
+    $conn = $this->getEntityManager()->getConnection();
+    $sql = $isMonth
+        ? "SELECT DATE_TRUNC('month', r.publication_date) AS date, COUNT(r.id) AS count"
+        : "SELECT DATE_TRUNC('day', r.publication_date) AS date, COUNT(r.id) AS count";
+
+    $sql .= " FROM review r
+              GROUP BY date
+              ORDER BY count DESC, date DESC
+              LIMIT 1";
+
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->executeQuery();
+
+    return $result->fetchAssociative() ?: null;
+}
+
+
 }

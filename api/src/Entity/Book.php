@@ -17,6 +17,7 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use ApiPlatform\Metadata\UrlGeneratorInterface;
 use App\Enum\BookCondition;
+use App\Enum\PromotionStatus;
 use App\Repository\BookRepository;
 use App\State\Processor\BookPersistProcessor;
 use App\State\Processor\BookRemoveProcessor;
@@ -50,6 +51,11 @@ use Symfony\Component\Validator\Constraints as Assert;
             processor: BookPersistProcessor::class,
             itemUriTemplate: '/admin/books/{id}{._format}'
         ),
+
+        // new Post(
+        //     processor: BookPersistProcessor::class,
+        //     itemUriTemplate: '/admin/books'
+        // ),
         new Get(
             uriTemplate: '/admin/books/{id}{._format}'
         ),
@@ -111,6 +117,17 @@ class Book
     #[ORM\GeneratedValue(strategy: 'CUSTOM')]
     #[ORM\Id]
     private ?Uuid $id = null;
+
+    #[ApiProperty(security: "is_granted('ROLE_ADMIN')")]
+    #[Groups(['book:read', 'admin:read'])]
+    #[Assert\NotBlank]
+    private PromotionStatus $promotionStatus;
+
+    #[ApiProperty]
+    #[Groups(['book:read'])]
+    #[Assert\Length(min: 5)]
+    #[Assert\Regex(pattern: '/^[a-z0-9-]+$/')]
+    public string $slug;
 
     /**
      * @see https://schema.org/itemOffered
@@ -192,13 +209,74 @@ class Book
     #[Groups(groups: ['Book:read', 'Book:read:admin', 'Bookmark:read'])]
     public ?int $rating = null;
 
+
+    #[ORM\ManyToMany(targetEntity: Category::class, inversedBy: 'books')]
+    #[ORM\JoinTable(name: 'book_category')]
+    #[Groups(['Book:read', 'Book:write'])]
+    private Collection $categories;
+
+    /**
+        * @var Collection<int, Bookmark>
+    */
+    #[ORM\OneToMany(mappedBy: 'book', targetEntity: Bookmark::class)]
+    private Collection $bookmarks;
+
+
+
+
     public function __construct()
     {
         $this->reviews = new ArrayCollection();
+        $this->categories = new ArrayCollection();
+        $this->bookmarks = new ArrayCollection();
     }
 
     public function getId(): ?Uuid
     {
         return $this->id;
     }
+    public function getPromotionStatus(): PromotionStatus
+    {
+        return $this->promotionStatus;
+    }
+
+    public function setPromotionStatus(PromotionStatus $promotionStatus): self
+    {
+        $this->promotionStatus = $promotionStatus;
+        return $this;
+    }
+
+    public function getSlug(): string
+    {
+        return $this->slug;
+    }
+
+    public function setSlug(string $slug): self
+    {
+        $this->slug = $slug;
+        return $this;
+    }
+
+    public function getAuthor(): ?string
+    {
+        return $this->author;
+    }
+
+    public function getCategories(): Collection
+    {
+        return $this->categories;
+    }
+    public function getReviews(): Collection
+    {
+        return $this->reviews;
+    }
+    public function getBookmarks(): Collection
+    {
+        return $this->bookmarks;
+    }
+    public function getTitle(): String
+    {
+        return $this->title;
+    }
+
 }
